@@ -29,6 +29,7 @@ class Usuario(ABC):
 @dataclass
 class Cliente(Usuario):
     rol: str = field(default='CLIENTE', init=False)
+    telefono: str = ''
 
     def obtener_permisos(self) -> list[str]:
         return ['VER_CATALOGO', 'RESERVAR', 'VER_RESERVAS']

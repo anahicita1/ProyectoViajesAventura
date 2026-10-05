@@ -24,10 +24,64 @@ class ReservaRepository:
     def obtener_reservas_cliente(cliente_id: int) -> list[dict[str, Any]]:
         with get_connection() as conn:
             rows = conn.execute(
-                "SELECT * FROM reservas WHERE cliente_id = ? ORDER BY id DESC",
+                """
+                SELECT r.*, p.nombre AS paquete_nombre, p.fecha_regreso
+                FROM reservas AS r
+                JOIN paquetes AS p ON p.id = r.paquete_id
+                WHERE r.cliente_id = ?
+                ORDER BY r.id DESC
+                """,
                 (cliente_id,),
             ).fetchall()
             return [dict(row) for row in rows]
+
+    @staticmethod
+    def listar_todas(
+        busqueda_cliente: str = '',
+        paquete_id: int | None = None,
+    ) -> list[dict[str, Any]]:
+        busqueda = f'%{busqueda_cliente.strip()}%'
+        with get_connection() as conn:
+            rows = conn.execute(
+                """
+                SELECT r.id, r.cliente_id, r.paquete_id, r.pasajeros, r.precio_total,
+                       r.estado, r.fecha_reserva, r.fecha_salida,
+                       c.nombre AS cliente_nombre, c.apellido AS cliente_apellido,
+                       c.email AS cliente_email, c.rut AS cliente_rut,
+                       c.telefono AS cliente_telefono, p.nombre AS paquete_nombre,
+                       p.fecha_regreso
+                FROM reservas AS r
+                JOIN clientes AS c ON c.id = r.cliente_id
+                JOIN paquetes AS p ON p.id = r.paquete_id
+                WHERE (? = '%%' OR c.nombre LIKE ? OR c.apellido LIKE ? OR c.email LIKE ?)
+                  AND (? IS NULL OR r.paquete_id = ?)
+                ORDER BY r.id DESC
+                """,
+                (busqueda, busqueda, busqueda, busqueda, paquete_id, paquete_id),
+            ).fetchall()
+            return [dict(row) for row in rows]
+
+    @staticmethod
+    def obtener_metricas() -> dict[str, int]:
+        with get_connection() as conn:
+            row = conn.execute(
+                """
+                SELECT COUNT(*) AS total_reservas,
+                       COALESCE(SUM(CASE WHEN estado = 'CONFIRMADA' THEN precio_total ELSE 0 END), 0) AS total_recaudado,
+                       COALESCE(SUM(CASE WHEN estado = 'CONFIRMADA' THEN pasajeros ELSE 0 END), 0) AS pasajeros_confirmados
+                FROM reservas
+                """
+            ).fetchone()
+            return {key: int(row[key]) for key in row.keys()}
+
+    @staticmethod
+    def cancelar_reserva(reserva_id: int) -> bool:
+        with get_connection() as conn:
+            cursor = conn.execute(
+                "UPDATE reservas SET estado = 'CANCELADA' WHERE id = ? AND estado = 'CONFIRMADA'",
+                (reserva_id,),
+            )
+            return cursor.rowcount == 1
 
     @staticmethod
     def obtener_reservas_paquete(paquete_id: int) -> list[dict[str, Any]]:

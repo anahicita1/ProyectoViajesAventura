@@ -13,3 +13,4 @@ class Destino:
     activo: bool = True
     costo_base: int = 0
     descripcion: str = ""
+    duracion_dias: int = 1

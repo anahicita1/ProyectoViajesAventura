@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from datetime import date
 
 from models.destino import Destino
 
@@ -19,6 +20,9 @@ class PaqueteTuristico:
     precio_congelado: int = 0
     activo: bool = True
     descripcion: str = ""
+    margen_porcentaje: float = 0
+    fecha_salida: date | None = None
+    fecha_regreso: date | None = None
 
     def __post_init__(self) -> None:
         if self.destino is not None and self.destino_id is None:

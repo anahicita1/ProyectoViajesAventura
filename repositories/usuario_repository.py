@@ -9,14 +9,29 @@ class UsuarioRepository:
     """Repositorio para autenticación y gestión de usuarios."""
 
     @staticmethod
-    def create_usuario(nombre: str, apellido: str, rut: str, email: str, password_hash: str, salt: str, rol: str) -> int:
+    def create_usuario(
+        nombre: str,
+        apellido: str,
+        rut: str,
+        email: str,
+        password_hash: str,
+        salt: str,
+        rol: str,
+        area: str = 'ADMINISTRACION',
+    ) -> int:
+        if rol != 'ADMINISTRADOR':
+            raise ValueError('Solo se pueden crear administradores en usuarios.')
+        if area not in {'CATALOGO', 'RESERVAS', 'DATOS', 'ADMINISTRACION'}:
+            raise ValueError('Área administrativa no válida.')
         with get_connection() as conn:
             cursor = conn.execute(
                 """
-                INSERT INTO usuarios (nombre, apellido, rut, email, password_hash, salt, rol, activo, intentos_fallidos, bloqueado_hasta)
-                VALUES (?, ?, ?, ?, ?, ?, ?, 1, 0, NULL)
+                INSERT INTO usuarios (
+                    nombre, apellido, rut, email, password_hash, salt, rol, area,
+                    activo, intentos_fallidos, bloqueado_hasta
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 0, NULL)
                 """,
-                (nombre, apellido, rut, email, password_hash, salt, rol),
+                (nombre, apellido, rut, email, password_hash, salt, rol, area),
             )
             return int(cursor.lastrowid)
 
@@ -24,7 +39,7 @@ class UsuarioRepository:
     def get_by_email(email: str) -> dict[str, Any] | None:
         with get_connection() as conn:
             row = conn.execute(
-                "SELECT * FROM usuarios WHERE email = ? LIMIT 1",
+                "SELECT * FROM usuarios WHERE email = ? COLLATE NOCASE LIMIT 1",
                 (email,),
             ).fetchone()
             return dict(row) if row else None
@@ -59,3 +74,10 @@ class UsuarioRepository:
         with get_connection() as conn:
             rows = conn.execute("SELECT * FROM usuarios ORDER BY id").fetchall()
             return [dict(row) for row in rows]
+
+    @staticmethod
+    def actualizar_area(usuario_id: int, area: str) -> None:
+        if area not in {'CATALOGO', 'RESERVAS', 'DATOS', 'ADMINISTRACION'}:
+            raise ValueError('Área administrativa no válida.')
+        with get_connection() as conn:
+            conn.execute('UPDATE usuarios SET area = ? WHERE id = ?', (area, usuario_id))

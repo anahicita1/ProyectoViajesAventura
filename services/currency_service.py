@@ -15,10 +15,10 @@ class CurrencyService:
             response.raise_for_status()
             payload = response.json()
             rates = payload.get('rates') or {}
-            clp_to_usd = rates.get('CLP')
-            if clp_to_usd is None:
+            clp_per_usd = rates.get('CLP')
+            if clp_per_usd is None or float(clp_per_usd) <= 0:
                 return round(clp / 900, 2)
-            usd = clp / (1 / clp_to_usd)
+            usd = clp / float(clp_per_usd)
             return round(usd, 2)
         except Exception:
             return round(clp / 900, 2)

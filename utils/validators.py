@@ -26,18 +26,15 @@ def validar_rut_chileno(rut: str) -> bool:
 def enmascarar_rut(rut: str) -> str:
     if not rut:
         return ''
-    rut_limpio = rut.strip().upper()
-    if len(rut_limpio) <= 2:
-        return rut_limpio
-    if '-' in rut_limpio:
-        cuerpo, dv = rut_limpio.split('-', 1)
-    else:
-        cuerpo, dv = rut_limpio[:-1], rut_limpio[-1]
-    numero = cuerpo.replace('.', '')
-    if len(numero) <= 3:
-        return f'{numero}-{dv}'
-    masked = f'{numero[:-3]}.XXX.XXX-{dv}'
-    return masked
+    rut_limpio = rut.strip().upper().replace('.', '').replace('-', '')
+    if len(rut_limpio) < 2:
+        return '**'
+    cuerpo = rut_limpio[:-1]
+    prefijo = cuerpo[:2]
+    grupo_visible = cuerpo[2:5]
+    if grupo_visible:
+        return f'{prefijo}.{grupo_visible}.***-*'
+    return f'{prefijo}.***-*'
 
 
 def enmascarar_telefono(telefono: str) -> str:
