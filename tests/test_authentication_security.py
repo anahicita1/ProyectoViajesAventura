@@ -3,6 +3,7 @@ import pytest
 from config import database
 from services.autenticacion_service import AutenticacionService
 from utils.security import verificar_password
+from utils.validators import enmascarar_rut, enmascarar_telefono
 
 
 def test_cliente_usa_hash_y_la_sesion_no_expone_datos_sensibles(tmp_path, monkeypatch):
@@ -35,3 +36,8 @@ def test_cliente_usa_hash_y_la_sesion_no_expone_datos_sensibles(tmp_path, monkey
             nombre='Otra', apellido='Cliente', rut='11.111.111-1',
             email='ana@example.com', password='OtraClave123!', telefono='+56987654321',
         )
+
+
+def test_rut_y_telefono_se_enmascaran_en_listados():
+    assert enmascarar_rut('12.345.678-5') == '12.345.***-*'
+    assert enmascarar_telefono('+56912345678') == '+56 9 XXXX 5678'
